@@ -4,6 +4,11 @@ const Document = () => {
   return (
     <Html lang="en">
       <Head />
+      <link
+        rel="preload"
+        as="image"
+        href="https://algonote.s3.ap-northeast-2.amazonaws.com/your-image.jpg"
+      />
       <body>
         <Main />
         <div id="modal-root" />

@@ -23,10 +23,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Service
 public class NotificationService {
 
-    private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60;
-
-    private final EmitterRepository emitterRepository;
+    private final SseEmitterService sseEmitterService;
+    private final RedisMessageService redisMessageService;
     private final NotificationRepository notificationRepository;
+    private final EmitterRepository emitterRepository;
 
     /**
      * SseEmitter를 구독한다.
@@ -37,11 +37,16 @@ public class NotificationService {
      */
     public SseEmitter subscribe(Long memberId, String lastEventId) {
         String emitterId = makeTimeIncludedId(memberId);
-        SseEmitter emitter = emitterRepository.save(emitterId, new SseEmitter(DEFAULT_TIMEOUT));
+        SseEmitter emitter = sseEmitterService.createEmitter(emitterId);
 
-        emitter.onCompletion(() -> emitterRepository.deleteById(emitterId));
-        emitter.onTimeout(() -> emitterRepository.deleteById(emitterId));
+        emitter.onCompletion(() -> {
+            sseEmitterService.deleteEmitter(emitterId);
+            redisMessageService.removeSubscribe(emitterId);
+        });
+        emitter.onTimeout(() -> sseEmitterService.deleteEmitter(emitterId));
+        emitter.onError((e) -> emitter.complete());
 
+        // Dummy Event 발송
         String eventId = makeTimeIncludedId(memberId);
         sendEvent(emitter, eventId, emitterId, "EventStream Created. [memberId=" + memberId + "]");
 
@@ -51,6 +56,29 @@ public class NotificationService {
 
         return emitter;
     }
+
+    /**
+     * SseEmitter로 event 전송
+     *
+     * @param emitterId 데이터를 받을 사용자의 아이디
+     * @param data 전송할 데이터
+     */
+    private void sendEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {
+        if (emitter != null) {
+            try {
+                emitter.send(
+                    SseEmitter.event()
+                        .id(eventId)
+                        .name("sse")
+                        .data(data));
+            } catch (IOException exception) {
+                emitterRepository.deleteById(emitterId);
+                emitter.completeWithError(exception);
+            }
+        }
+    }
+
+    ///
 
     /**
      * memberId에 현재 시각을 붙여 id를 생성한다.
@@ -87,27 +115,6 @@ public class NotificationService {
     }
 
     /**
-     * SseEmitter로 event 전송
-     *
-     * @param emitterId 데이터를 받을 사용자의 아이디
-     * @param data 전송할 데이터
-     */
-    private void sendEvent(SseEmitter emitter, String eventId, String emitterId, Object data) {
-        if (emitter != null) {
-            try {
-                emitter.send(
-                    SseEmitter.event()
-                        .id(eventId)
-                        .name("sse")
-                        .data(data));
-            } catch (IOException exception) {
-                emitterRepository.deleteById(emitterId);
-                emitter.completeWithError(exception);
-            }
-        }
-    }
-
-    /**
      * 외부 서비스 클래스에서 쓰일 알림 전송 메서드
      *
      * @param receiver 알림을 받을 회원
@@ -121,14 +128,7 @@ public class NotificationService {
 
         String receiverId = String.valueOf(receiver.getId());
         String eventId = receiverId + "_" + System.currentTimeMillis();
-
-        Map<String, SseEmitter> sseEmitters = emitterRepository.findAllStartWithById(String.valueOf(receiverId));
-        sseEmitters.forEach(
-            (key, emitter) -> {
-                emitterRepository.saveEventCache(key, notification);
-                sendEvent(emitter, eventId, key, NotificationResDto.from(notification));
-            }
-        );
+        redisMessageService.publish(eventId, NotificationResDto.from(notification));
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.ssafy.algonote.notification.repository;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,10 @@ public class EmitterRepository {
     public SseEmitter save(String id, SseEmitter sseEmitter) {
         emitters.put(id, sseEmitter);
         return sseEmitter;
+    }
+
+    public Optional<SseEmitter> findById(String id) {
+        return Optional.ofNullable(emitters.get(id));
     }
 
     public void deleteById(String id) {

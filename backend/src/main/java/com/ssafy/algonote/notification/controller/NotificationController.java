@@ -10,9 +10,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,7 +52,7 @@ public class NotificationController {
         summary = "알림 읽음 처리",
         description = "알림을 읽음 처리합니다."
     )
-    @PostMapping("/{notificationId}/mark-as-read")
+    @DeleteMapping("/{notificationId}/mark-as-read")
     public ResponseEntity<Void> markNotificationAsRead(@PathVariable("notificationId") Long notificationId) {
         notificationService.markNotificationAsRead(notificationId);
         return ResponseEntity.ok().build();

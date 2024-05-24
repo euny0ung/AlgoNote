@@ -2,6 +2,8 @@ package com.ssafy.algonote.recommend.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.ssafy.algonote.config.security.SecurityUtil;
+import com.ssafy.algonote.member.service.MemberService;
+import com.ssafy.algonote.recommend.dto.RecommendGroupDto;
 import com.ssafy.algonote.recommend.dto.response.RecommendProblemResDto;
 
 import com.ssafy.algonote.recommend.dto.response.RecommendResDto;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecommendController {
 
     private final RecommendService recommendService;
+    private final MemberService memberService;
 
     @Operation(
         summary = "문제 추천",
@@ -39,6 +42,7 @@ public class RecommendController {
     @GetMapping("/{tag}")
     public ResponseEntity<Page<RecommendProblemResDto>> recommendUnsolvedProblem(@PathVariable("tag") String tag,@RequestParam int page,@RequestParam int size){
         Long memberId = SecurityUtil.getMemberId();
+        log.info("tag: {} page: {} size: {}", tag, page, size);
         return ResponseEntity.ok(recommendService.recommendUnsolvedProblem(memberId, tag, page, size));
     }
 
@@ -46,5 +50,14 @@ public class RecommendController {
     public ResponseEntity<Void> test(){
         recommendService.test();
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/group/{group}")
+    public ResponseEntity<RecommendGroupDto> recommendByTags(@PathVariable("group") String group, @RequestParam int page, @RequestParam int size){
+        Long memberId = SecurityUtil.getMemberId();
+        log.info("group: {}", group);
+//        memberService.recommendByTags(memberId, group, page, size);
+//        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(recommendService.recommendByTags(memberId, group, page, size));
     }
 }

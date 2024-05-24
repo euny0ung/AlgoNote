@@ -5,6 +5,7 @@ import static com.ssafy.algonote.problem.domain.QSolvedProblem.solvedProblem;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.ssafy.algonote.problem.domain.Problem;
 import com.ssafy.algonote.problem.dto.SolvedProblemDto;
 import com.ssafy.algonote.problem.dto.response.AnalysisResDto;
 import com.ssafy.algonote.problem.dto.response.AnaylsisDto;
@@ -33,6 +34,18 @@ public class SolvedProblemCustomRepositoryImpl implements SolvedProblemCustomRep
         this.queryFactory = new JPAQueryFactory(em);
 
     }
+
+    @Override
+    public List<Long> findSolvedProblemIdByTag(Long memberId, String tag) {
+        return queryFactory.select(solvedProblem.problem.id)
+            .from(solvedProblem)
+            .where(solvedProblem.member.id.eq(memberId))
+            .join(solvedProblem.problem)
+            .where(solvedProblem.problem.tags.any().nameEn.eq(tag))
+            .fetch();
+    }
+
+
 
     @Override
 //    @Transactional

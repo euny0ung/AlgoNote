@@ -148,7 +148,8 @@ public class NotificationService {
     public void markNotificationAsRead(Long notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
             .orElseThrow(() -> new CustomException(ErrorCode.NOT_FOUND_NOTIFICATION));
-        notification.updateIsRead();
+//        notification.updateIsRead();
+        notificationRepository.delete(notification);
     }
 
 }

@@ -88,11 +88,19 @@ public class NoteService {
         if (note.getMember() != member) {
             throw new CustomException(ErrorCode.NO_AUTHORITY);
         }
+
+        Long problemId = note.getProblem().getId();
         bookmarkRepository.deleteAllByNote(note);
         heartRepository.deleteAllByNote(note);
         reviewRepository.deleteAllByNote(note);
         noteRepository.delete(note);
         noteDocumentRepository.delete(noteDocument);
+
+        List<Note> notes = noteRepository.findByMember_IdAndProblem_Id(memberId, problemId);
+        if(notes.isEmpty()){
+            SolvedProblem solvedProblem = getSolvedProblemOrException(memberId, problemId);
+            solvedProblem.setComplete(WritingStatus.NOT_YET);
+        }
     }
 
     // 노트 id로 조회
